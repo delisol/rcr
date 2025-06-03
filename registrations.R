@@ -5,9 +5,8 @@ library(lubridate)
 
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
 
-
 # last Stripe deposit in gnucash
-date_last_gnu <- '2025-04-04'
+date_last_gnu <- '2025-05-02'
 
 orders <-
   read_csv(
@@ -65,14 +64,14 @@ balance_history <-
 fee <- balance_history %>%
   filter(fee != '0.00') %>%
   filter(!is.na(transfer)) %>%
-  group_by(transfer) %>%
+  group_by(transfer, transfer_date_utc) %>%
   summarise(amount = sum(as.numeric(fee))) %>%
   mutate(amount = as.character(amount), type = 'fee')
 
 contributions <-
   balance_history %>%
   filter(type == 'contribution') %>%
-  group_by(transfer) %>%
+  group_by(transfer, transfer_date_utc) %>%
   summarise(amount = sum(as.numeric(amount))) %>%
   mutate(amount = as.character(amount), type = 'contribution')
 
@@ -147,8 +146,7 @@ for_gnucash <-
   ) %>%
   # filter to post latest gnucash deposit
   filter(
-    transfer_date_utc >= date_last_gnu |
-      is.na(transfer_date_utc)
+    transfer_date_utc >= date_last_gnu
   ) %>%
   # filter to payments already paid out
   filter(!is.na(transfer)) %>%
@@ -159,7 +157,7 @@ for_gnucash <-
       str_detect(account, 'Lamentations') &
         str_detect(memo, 'Diane Ellison') &
         !is.na(memo),
-      'Refund repurposed as donation',
+      'Donation from repurposed refund',
       account
     )
   )
