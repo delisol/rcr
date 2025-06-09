@@ -163,3 +163,16 @@ for_gnucash <-
   )
 
 write.csv(for_gnucash, 'for_gnucash.csv', na = '')
+
+# erase downloads from Stripe
+setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
+
+file.remove(
+  'unified_payments.csv'
+)
+file.remove('balance_history.csv')
+file.remove('orders.csv')
+file.remove('donations.csv')
+
+# reset wd
+setwd(here())
