@@ -6,7 +6,7 @@ library(lubridate)
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
 
 # last Stripe deposit in gnucash
-date_last_gnu <- '2025-05-02'
+date_last_gnu <- '2025-06-03'
 
 orders <-
   read_csv(
@@ -167,9 +167,6 @@ write.csv(for_gnucash, 'for_gnucash.csv', na = '')
 # erase downloads from Stripe
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
 
-file.remove(
-  'unified_payments.csv'
-)
 file.remove('balance_history.csv')
 file.remove('orders.csv')
 file.remove('donations.csv')
