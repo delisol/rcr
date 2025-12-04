@@ -6,7 +6,7 @@ library(lubridate)
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
 
 # last Stripe deposit in gnucash
-date_last_gnu <- '2025-10-02'
+date_last_gnu <- '2025-11-04'
 
 orders <-
   read_csv(
@@ -150,6 +150,14 @@ for_gnucash <-
   ) %>%
   # filter to payments already paid out
   filter(!is.na(transfer)) %>%
+  # refunds
+  mutate(
+    memo = ifelse(
+      str_detect(account, 'refund') & is.na(memo),
+      account,
+      memo
+    )
+  ) %>%
   select(num, date_of_deposit, desc, account, dep_amt, memo) %>%
   #edits
   mutate(
