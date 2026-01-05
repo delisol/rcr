@@ -6,7 +6,7 @@ library(lubridate)
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
 
 # last Stripe deposit in gnucash
-date_last_gnu <- '2025-11-04'
+date_last_gnu <- '2025-12-11'
 
 orders <-
   read_csv(
