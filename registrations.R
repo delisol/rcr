@@ -6,7 +6,7 @@ library(lubridate)
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
 
 # last Stripe deposit in gnucash
-date_last_gnu <- '2026-01-22'
+date_last_gnu <- '2026-03-03'
 
 orders <-
   read_csv(
@@ -136,9 +136,8 @@ for_gnucash <-
     memo = ifelse(
       type == 'charge',
       sprintf(
-        '%s , %s on %s',
-        billing_name,
-        lineitem_name,
+        'Refno: %s , on %s',
+        source,
         as.character.Date(created_utc)
       ),
       NA
@@ -158,7 +157,6 @@ for_gnucash <-
       memo
     )
   ) %>%
-  select(num, date_of_deposit, desc, account, dep_amt, memo) %>%
   #edits
   mutate(
     account = ifelse(
@@ -168,7 +166,19 @@ for_gnucash <-
       'Donation from repurposed refund',
       account
     )
-  )
+  ) %>%
+  # Susan Campbell and Robin Harrow, withdrawal to refund
+  mutate(
+    account = ifelse(
+      (str_detect(memo, 'ch_3T71JWJeXGdR8GBM0q51PA3j') |
+        str_detect(memo, 'ch_3T9XmoJeXGdR8GBM1zl2gTg5')) &
+        !is.na(memo),
+      'donation from withdrawal, Si Placet: Students of Josquin and Palestrina',
+      account
+    )
+  ) %>%
+  select(num, date_of_deposit, desc, account, dep_amt, memo)
+
 
 write.csv(for_gnucash, 'for_gnucash.csv', na = '')
 
