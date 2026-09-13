@@ -6,7 +6,7 @@ library(lubridate)
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
 
 # last Stripe deposit in gnucash
-date_last_gnu <- '2026-04-07'
+date_last_gnu <- '2026-05-20'
 
 orders <-
   read_csv(
@@ -26,6 +26,7 @@ orders_donations <-
   bind_rows(orders, donations) %>%
   # fix one-time anomalies caused by payment structure
   filter(!is.na(email)) %>%
+  filter(total != '0.00') %>%
   select(
     email,
     total,
@@ -49,6 +50,8 @@ balance_history <-
     col_types = cols(.default = 'c')
   ) %>%
   clean_names() %>%
+  # filtering to last date squarespace registration was used for workshops
+  filter(as.Date(substr(transfer_date_utc, 1, 10)) <= as.Date('2026-08-12')) %>%
   select(
     type,
     source,
@@ -66,7 +69,7 @@ fee <- balance_history %>%
   filter(!is.na(transfer)) %>%
   group_by(transfer, transfer_date_utc) %>%
   summarise(amount = sum(as.numeric(fee))) %>%
-  mutate(amount = as.character(amount), type = 'fee')
+  mutate(amount = as.character(amount), type = 'fee', description = 'cc fee')
 
 contributions <-
   balance_history %>%
@@ -90,6 +93,12 @@ combined <-
     .
   ) %>%
   arrange(transfer)
+
+t <- combined %>%
+  filter(
+    !is.na(lineitem_name) |
+      description == 'STRIPE PAYOUT'
+  )
 
 
 # set wd locally out of vault
@@ -157,28 +166,7 @@ for_gnucash <-
       memo
     )
   ) %>%
-  #edits
-  mutate(
-    account = ifelse(
-      str_detect(account, 'Lamentations') &
-        str_detect(memo, 'Diane Ellison') &
-        !is.na(memo),
-      'Donation from repurposed refund',
-      account
-    )
-  ) %>%
-  # Susan Campbell and Robin Harrow, withdrawal to refund
-  mutate(
-    account = ifelse(
-      (str_detect(memo, 'ch_3T71JWJeXGdR8GBM0q51PA3j') |
-        str_detect(memo, 'ch_3T9XmoJeXGdR8GBM1zl2gTg5')) &
-        !is.na(memo),
-      'donation from withdrawal, Si Placet: Students of Josquin and Palestrina',
-      account
-    )
-  ) %>%
   select(num, date_of_deposit, desc, account, dep_amt, memo)
-
 
 write.csv(for_gnucash, 'for_gnucash.csv', na = '')
 
