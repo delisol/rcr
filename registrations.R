@@ -6,7 +6,7 @@ library(lubridate)
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
 
 # last Stripe deposit in gnucash
-date_last_gnu <- '2026-05-20'
+date_last_gnu <- '2026-09-02'
 
 orders <-
   read_csv(
@@ -28,6 +28,7 @@ orders_donations <-
   filter(!is.na(email)) %>%
   filter(total != '0.00') %>%
   select(
+    paid_at,
     email,
     total,
     lineitem_name,
@@ -51,7 +52,7 @@ balance_history <-
   ) %>%
   clean_names() %>%
   # filtering to last date squarespace registration was used for workshops
-  filter(as.Date(substr(transfer_date_utc, 1, 10)) <= as.Date('2026-08-12')) %>%
+  filter(as.Date(substr(transfer_date_utc, 1, 10)) >= as.Date('2026-09-02')) %>%
   select(
     type,
     source,
@@ -87,19 +88,30 @@ combined <-
   bind_rows(., contributions, fee) %>%
   arrange(transfer) %>%
   left_join(., orders_donations, by = c('source' = 'payment_reference')) %>%
+  filter(!is.na(paid_at)) %>%
   bind_rows(
     balance_history %>%
       filter(type == 'payout'),
     .
   ) %>%
-  arrange(transfer)
+  arrange(transfer) %>%
+  filter(
+    transfer == lag(transfer) |
+      transfer == lead(transfer)
+  ) %>%
+  bind_rows(., fee) %>%
+  arrange(transfer) %>%
+  filter(
+    transfer == lag(transfer) |
+      transfer == lead(transfer)
+  )
+
 
 t <- combined %>%
   filter(
     !is.na(lineitem_name) |
       description == 'STRIPE PAYOUT'
   )
-
 
 # set wd locally out of vault
 setwd(here())
@@ -168,7 +180,7 @@ for_gnucash <-
   ) %>%
   select(num, date_of_deposit, desc, account, dep_amt, memo)
 
-write.csv(for_gnucash, 'for_gnucash.csv', na = '')
+write.csv(for_gnucash, 'for_gnucash_sqsp.csv', na = '')
 
 # erase downloads from Stripe
 setwd('C:\\Users\\dsole\\OneDrive\\Personal Vault\\data\\rcr')
