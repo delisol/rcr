@@ -10,7 +10,6 @@ library(lubridate)
 library(googlesheets4)
 library(googledrive)
 library(rlang)
-# library(readxl)
 
 # end packages needed
 
@@ -19,7 +18,7 @@ library(rlang)
 # end user-defined functions
 
 # enter the last Stripe deposit in gnucash
-dteLastGnu <- '2026-09-02'
+dteLastGnu <- '2026-10-01'
 
 # start with clean auth plate
 gs4_deauth()
@@ -64,10 +63,11 @@ payouts_plus <-
 #######################################################################
 # workshops downloaded from jotform
 
-dynName <- 'jotform_regis'
+dynName <- 'form_responses'
 df <-
   read_sheet(
-    'https://docs.google.com/spreadsheets/d/1W0vZung6AOcVRFHgvNLH56HqgO4K9iwm5VnSWulJ-fA'
+    'https://docs.google.com/spreadsheets/d/1cDcCu0YGcrDsRqonGTfnGc2l2rcdYiMgu3ipbrUJck8/edit?usp=sharing',
+    sheet = 'Form responses'
   ) %>%
   clean_names() %>%
   rename_with(~ str_replace(., '^name_', ''), starts_with('name_')) %>%
@@ -109,6 +109,41 @@ df <-
 assign(dynName, df)
 dynName <- ''
 
+dynName <- 'concert tickets'
+df <-
+  read_sheet(
+    'https://docs.google.com/spreadsheets/d/1cDcCu0YGcrDsRqonGTfnGc2l2rcdYiMgu3ipbrUJck8/edit?usp=sharing',
+    sheet = 'Concert tickets'
+  ) %>%
+  clean_names() %>%
+  rename_with(~ str_remove(.x, '^full_name_'), starts_with('full_name_')) %>%
+  #  mutate(name = sprintf('%s %s' , first_name , last_name)) %>%
+  rename(
+    event = concert
+  ) %>%
+  mutate(today = as.Date(submission_date)) %>%
+  mutate(ticket_price = parse_number(str_extract(event, "\\$[0-9,.]+"))) %>%
+  mutate(fee_num = ticket_price * number_of_tickets) %>%
+  mutate(event = str_c('Concert: ', event)) %>%
+  select(
+    first_name,
+    last_name,
+    email,
+    event,
+    submission_id,
+    today,
+    fee_num,
+    additional_donation_optional
+  ) %>%
+  mutate(sce = dynName) %>%
+  mutate(acct = event) %>%
+  relocate(sce, .after = last_col())
+assign(dynName, df)
+dynName <- ''
+
+jotform_regis <-
+  bind_rows(form_responses, `concert tickets`)
+
 payouts_plus_jf <- left_join(
   payouts_plus %>%
     rename(submission_id = submission_id_metadata),
@@ -120,7 +155,7 @@ payouts_plus_jf <- left_join(
 
 forGnucash <-
   payouts_plus_jf %>%
-  filter(transfer_date_utc != as.Date('2026-09-23')) %>% # filter out sqsp transaction
+  #  filter(transfer_date_utc != as.Date('2026-09-23')) %>% # filter out sqsp transaction
   rename(regis_fee = amount, fee_cc = fee, score_fee = fee_score) %>%
   ########### create bank account ###########
   mutate(acct = case_when(type == 'payout' ~ '1Bank', TRUE ~ acct)) %>%
