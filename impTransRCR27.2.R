@@ -18,7 +18,7 @@ library(rlang)
 # end user-defined functions
 
 # enter the last Stripe deposit in gnucash
-dteLastGnu <- '2026-10-01'
+dteLastGnu <- '2026-10-09'
 
 # start with clean auth plate
 gs4_deauth()
@@ -74,22 +74,25 @@ df <-
   #  mutate(name = sprintf('%s %s' , first_name , last_name)) %>%
   rename(
     event = which_event_are_you_registering_for,
+    howMany = how_many_people_are_you_registering_including_yourself,
     scores = how_would_you_like_your_scores,
     packets = how_many_printed_packets_20_00_each,
     reduced = reduced_fee_registration_20_30,
-    forward = pay_it_forward_50_thank_you
+    forward = pay_it_forward_50_thank_you,
   ) %>%
   mutate(fee_str = coalesce(fee_a, fee_b, fee_c)) %>%
   mutate(
     fee_num = recode(
       fee_str,
       'Standard Fee ($40)' = 40,
+      'Standard Fee ($20)' = 20, # original std fee for iberian x 1
       'RCR Singer ($20)' = 20,
       'Reduced Fee Registration ($20-$30)' = as.numeric(reduced),
       'Pay It Forward ($50 or more, thank you!)' = forward,
       .default = as.numeric(0)
     )
   ) %>%
+  mutate(fee_num = fee_num * howMany) %>% # account for multiple regis
   mutate(fee_score = coalesce(20 * packets, 0)) %>%
   select(
     first_name,
@@ -100,6 +103,7 @@ df <-
     submission_id,
     today,
     fee_str,
+    howMany,
     fee_num,
     fee_score
   ) %>%
@@ -151,7 +155,6 @@ payouts_plus_jf <- left_join(
   by = 'submission_id'
 ) %>%
   mutate(amount = ifelse(type != 'payout', fee_num, amount))
-
 
 forGnucash <-
   payouts_plus_jf %>%
